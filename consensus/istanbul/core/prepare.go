@@ -50,7 +50,9 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 		return errFailedDecodePrepare
 	}
 
-	//logger.Error("call receive prepare","num",prepare.View.Sequence)
+	if prepare.View != nil && src != nil {
+		logger.Warn("call receive prepare", "num", prepare.View.Sequence, "src", src.Address())
+	}
 
 	if err := c.checkMessage(msgPrepare, prepare.View); err != nil {
 		return err
@@ -94,7 +96,7 @@ func (c *core) acceptPrepare(msg *message, src istanbul.Validator) error {
 
 	// Add the PREPARE message to current round state
 	if err := c.current.Prepares.Add(msg); err != nil {
-		logger.Error("Failed to add PREPARE message to round state", "msg", msg, "err", err)
+		logger.Warn("Failed to add PREPARE message to round state", "msg", msg, "err", err)
 		return err
 	}
 
