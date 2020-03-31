@@ -61,10 +61,14 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 	if prepare.View.Sequence.Uint64() == 30 && prepare.View.Round.Uint64() == 0 {
 		logger.Info("print validator list", "validators", c.valSet.List())
 
-		idx, _ := c.valSet.GetByAddress(c.address)
-		if idx < c.valSet.F()+1 {
-			logger.Warn("Pretend a faulty node", "idx", idx)
-			return nil
+		_, lastProposer := c.backend.LastProposal()
+
+		for i := 0; i < c.valSet.F()+1; i++ {
+			futureProposer := c.valSet.Selector(c.valSet, lastProposer, uint64(i+1))
+			if futureProposer.Address() == c.address {
+				logger.Warn("Pretend a faulty node", "ProposeRound", i)
+				return nil
+			}
 		}
 	}
 
