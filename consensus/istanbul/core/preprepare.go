@@ -64,7 +64,7 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 	}
 
 	if preprepare.View != nil && src != nil {
-		logger.Warn("call receive prepare", "num", preprepare.View.Sequence, "src", src.Address())
+		logger.Warn("receive preprepare", "num", preprepare.View.Sequence, "src", src.Address())
 	}
 
 	// Ensure we have the same view with the PRE-PREPARE message
@@ -123,6 +123,7 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 				c.acceptPreprepare(preprepare)
 				c.setState(StatePrepared)
 				c.sendCommit()
+				logger.Warn("Send commit in handlePreprepare")
 			} else {
 				// Send round change
 				c.sendNextRoundChange("handlePrepare. HashLocked, but received hash is different from locked hash")
@@ -134,6 +135,7 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 			c.acceptPreprepare(preprepare)
 			c.setState(StatePreprepared)
 			c.sendPrepare()
+			logger.Warn("Send prepare in handlePreprepare")
 		}
 	}
 

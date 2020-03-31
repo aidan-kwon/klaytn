@@ -71,7 +71,7 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 	}
 
 	if commit.View != nil && src != nil {
-		logger.Warn("receive handle commit", "num", commit.View.Sequence, "src", src.Address())
+		logger.Warn("receive commit", "num", commit.View.Sequence, "src", src.Address())
 	}
 
 	if err := c.checkMessage(msgCommit, commit.View); err != nil {

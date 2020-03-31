@@ -51,7 +51,7 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 	}
 
 	if prepare.View != nil && src != nil {
-		logger.Warn("call receive prepare", "num", prepare.View.Sequence, "src", src.Address())
+		logger.Warn("receive prepare", "num", prepare.View.Sequence, "src", src.Address())
 	}
 
 	if err := c.checkMessage(msgPrepare, prepare.View); err != nil {
@@ -83,6 +83,7 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 		c.current.LockHash()
 		c.setState(StatePrepared)
 		c.sendCommit()
+		logger.Warn("Send commit in hadlePrepare")
 	}
 
 	return nil
