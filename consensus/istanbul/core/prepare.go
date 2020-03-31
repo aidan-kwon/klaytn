@@ -61,13 +61,11 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 	if prepare.View.Sequence.Uint64() == 30 && prepare.View.Round.Uint64() == 0 {
 		logger.Info("print validator list", "validators", c.valSet.List())
 
-		for i := 0; i < c.valSet.F(); i++ {
-			if c.valSet.GetByIndex(uint64(i)).Address() == c.address {
-				logger.Warn("Pretend a faulty node", "idx", i)
-				return errNotFromProposer
-			}
+		idx, _ := c.valSet.GetByAddress(c.address)
+		if idx < c.valSet.F()+1 {
+			logger.Warn("Pretend a faulty node", "idx", idx)
+			return nil
 		}
-		logger.Warn("Pretend a non-faulty node")
 	}
 
 	// If it is locked, it can only process on the locked block.
