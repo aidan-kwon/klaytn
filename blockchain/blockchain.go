@@ -1766,7 +1766,7 @@ func (bc *BlockChain) CloseBlockSubscriptionLoop() {
 // func (bc *BlockChain) replaceCurrentBlock(latestBlock *types.Block) {
 // 	bc.mu.Lock()
 // 	defer bc.mu.Unlock()
-//
+//  
 // 	if latestBlock == nil {
 // 		logger.Error("no latest block")
 // 		return
