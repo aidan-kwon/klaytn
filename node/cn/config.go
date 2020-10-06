@@ -89,6 +89,7 @@ type Config struct {
 	// KES options
 	DownloaderDisable bool
 	FetcherDisable    bool
+	WorkerDisable     bool // disables worker and does not start istanbul
 
 	// Service chain options
 	ParentOperatorAddr *common.Address `toml:",omitempty"` // A hex account address in the parent chain used to sign a child chain transaction.

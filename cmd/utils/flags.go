@@ -871,7 +871,10 @@ var (
 		Usage: "Path of node daemon. Used to give signal to kill",
 		Value: "~/klaytn/bin/kcnd",
 	}
-
+	WorkerDisableFlag = cli.BoolFlag{
+		Name:  "worker.disable",
+		Usage: "Disables worker. This flag results in block processing failure.",
+	}
 	// db migration vars
 	DstDbTypeFlag = cli.StringFlag{
 		Name:  "dst.dbtype",
@@ -1378,6 +1381,7 @@ func SetKlayConfig(ctx *cli.Context, stack *node.Node, cfg *cn.Config) {
 		}
 	}
 
+	cfg.WorkerDisable = ctx.GlobalBool(WorkerDisableFlag.Name)
 	cfg.DownloaderDisable = ctx.GlobalBool(DownloaderDisableFlag.Name)
 	cfg.FetcherDisable = ctx.GlobalBool(FetcherDisableFlag.Name)
 
