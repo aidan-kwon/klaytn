@@ -1736,22 +1736,14 @@ func (bc *BlockChain) BlockSubscriptionLoop(pool *TxPool) {
 			continue
 		}
 
-		oldHead := bc.CurrentHeader()
-		bc.replaceCurrentBlock(block)
-		logger.Info("headers", "old", oldHead.Number.String(), "new", bc.CurrentHeader().Number.String())
-		pool.lockedReset(oldHead, bc.CurrentBlock().Header())
+		// oldHead := bc.CurrentHeader()
+		// bc.replaceCurrentBlock(block)
+		// logger.Info("headers", "old", oldHead.Number.String(), "new", bc.CurrentHeader().Number.String())
+		// pool.lockedReset(oldHead, bc.CurrentBlock().Header())
 
-		// TODO-Klaytn-KES: implement block handling logic
-		// if bc.cacheConfig.TrieNodeCacheConfig.ProcessBlock {
-		// 	_, err := bc.InsertChain(types.Blocks{block})
-		// 	if err != nil {
-		// 		logger.Crit("failed to insert a block", "err", err)
-		// 	}
-		// } else {
-		// 	oldHead := bc.CurrentHeader()
-		// 	bc.replaceCurrentBlock(block)
-		// 	pool.lockedReset(oldHead, bc.CurrentHeader())
-		// }
+		if _, err := bc.InsertChain(types.Blocks{block}); err != nil {
+			logger.Crit("failed to insert a block", "err", err)
+		}
 	}
 	logger.Info("close the block subscription loop")
 }
