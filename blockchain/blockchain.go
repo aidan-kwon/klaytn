@@ -1738,7 +1738,8 @@ func (bc *BlockChain) BlockSubscriptionLoop(pool *TxPool) {
 
 		oldHead := bc.CurrentHeader()
 		bc.replaceCurrentBlock(block)
-		pool.lockedReset(oldHead, bc.CurrentHeader())
+		logger.Info("headers", "old", oldHead.Number.String(), "new", bc.CurrentHeader().Number.String())
+		pool.lockedReset(oldHead, bc.CurrentBlock().Header())
 
 		// TODO-Klaytn-KES: implement block handling logic
 		// if bc.cacheConfig.TrieNodeCacheConfig.ProcessBlock {
@@ -1793,6 +1794,7 @@ func (bc *BlockChain) replaceCurrentBlock(latestBlock *types.Block) {
 
 	// Insert a new block and update metrics
 	bc.insert(latestBlock)
+	bc.hc.SetCurrentHeader(latestBlock.Header())
 	headBlockNumberGauge.Update(latestBlock.Number().Int64())
 	bc.stateCache.TrieDB().UpdateMetricNodes()
 
