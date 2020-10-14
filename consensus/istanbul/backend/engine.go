@@ -24,11 +24,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/klaytn/klaytn/reward"
 	"math/big"
 	"time"
 
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/klaytn/klaytn/blockchain/state"
 	"github.com/klaytn/klaytn/blockchain/types"
 	"github.com/klaytn/klaytn/common"
@@ -40,6 +39,7 @@ import (
 	"github.com/klaytn/klaytn/crypto/sha3"
 	"github.com/klaytn/klaytn/networks/rpc"
 	"github.com/klaytn/klaytn/params"
+	"github.com/klaytn/klaytn/reward"
 	"github.com/klaytn/klaytn/ser/rlp"
 )
 
@@ -594,6 +594,7 @@ func (sb *backend) snapshot(chain consensus.ChainReader, number uint64, hash com
 		snap    *Snapshot
 	)
 
+	start := time.Now()
 	for snap == nil {
 		// If an in-memory snapshot was found, use that
 		if s, ok := sb.recents.Get(hash); ok {
@@ -624,14 +625,21 @@ func (sb *backend) snapshot(chain consensus.ChainReader, number uint64, hash com
 			number, hash = number-1, header.ParentHash
 		}
 	}
+	logger.Warn(">>>> for snap == nil: ", "elapsed", time.Since(start))
+
 	// Previous snapshot found, apply any pending headers on top of it
 	for i := 0; i < len(headers)/2; i++ {
 		headers[i], headers[len(headers)-1-i] = headers[len(headers)-1-i], headers[i]
 	}
+
+	start = time.Now()
 	snap, err := snap.apply(headers, sb.governance, sb.address, sb.governance.Epoch())
 	if err != nil {
 		return nil, err
 	}
+	logger.Warn(">>>> snap.apply == nil: ", "elapsed", time.Since(start))
+
+	start = time.Now()
 	if sb.governance.ProposerPolicy() == uint64(istanbul.WeightedRandom) {
 		// Snapshot of block N (Snapshot_N) should contain proposers for N+1 and following blocks.
 		// And proposers for Block N+1 can be calculated from the nearest previous proposersUpdateInterval block.
@@ -650,6 +658,9 @@ func (sb *backend) snapshot(chain consensus.ChainReader, number uint64, hash com
 		}
 	}
 
+	logger.Warn(">>>> if sb.gover... ", "elapsed", time.Since(start))
+
+	start = time.Now()
 	// If we've generated a new checkpoint snapshot, save to disk
 	if snap.Number%checkpointInterval == 0 && len(headers) > 0 {
 		if sb.governance.CanWriteGovernanceState(snap.Number) {
@@ -660,6 +671,7 @@ func (sb *backend) snapshot(chain consensus.ChainReader, number uint64, hash com
 		}
 		logger.Trace("Stored voting snapshot to disk", "number", snap.Number, "hash", snap.Hash)
 	}
+	logger.Warn(">>>> sb.governance.WriteGovernanceState: ", "elapsed", time.Since(start))
 
 	sb.recents.Add(snap.Hash, snap)
 	return snap, err
