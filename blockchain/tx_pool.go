@@ -29,6 +29,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-redis/redis/v7"
+
 	"github.com/klaytn/klaytn/blockchain/state"
 	"github.com/klaytn/klaytn/blockchain/types"
 	"github.com/klaytn/klaytn/common"
@@ -118,6 +120,8 @@ type TxPoolConfig struct {
 	Lifetime   time.Duration // Maximum amount of time non-executable transaction are queued
 
 	NoAccountCreation bool // Whether account creation transactions should be disabled
+
+	RedisEndpoints []string
 }
 
 // DefaultTxPoolConfig contains the default configurations for the transaction
@@ -195,6 +199,8 @@ type TxPool struct {
 	wg sync.WaitGroup // for shutdown sync
 
 	txMsgCh chan types.Transactions
+
+	redisClient redis.UniversalClient
 }
 
 // NewTxPool creates a new transaction pool to gather, sort and filter inbound
@@ -219,6 +225,9 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 		//         later we have to change this rule when governance of UnitPrice is determined.
 		gasPrice: new(big.Int).SetUint64(chainconfig.UnitPrice),
 		txMsgCh:  make(chan types.Transactions, txMsgChSize),
+	}
+	if config.RedisEndpoints != nil {
+		pool.redisClient = redis.NewClient(&redis.Options{Addr: config.RedisEndpoints[0]})
 	}
 	pool.locals = newAccountSet(pool.signer)
 	pool.priced = newTxPricedList(&pool.all)
@@ -1397,12 +1406,25 @@ func (pool *TxPool) getPendingNonce(addr common.Address) uint64 {
 		pool.pendingNonce[addr] = cNonce
 	}
 
+	if pool.redisClient != nil {
+		key := string(pool.currentBlockNumber) + ":" + addr.String()
+		ret, err := pool.redisClient.Get(key).Uint64()
+		if err != nil && pool.pendingNonce[addr] < ret {
+			pool.pendingNonce[addr] = ret
+		}
+	}
+
 	return pool.pendingNonce[addr]
 }
 
 // setPendingNonce sets the new canonical nonce for the managed state.
 func (pool *TxPool) setPendingNonce(addr common.Address, nonce uint64) {
 	pool.pendingNonce[addr] = nonce
+	if pool.redisClient != nil {
+		key := string(pool.currentBlockNumber) + ":" + addr.String()
+		exp := 1 * time.Minute
+		pool.redisClient.Set(key, string(nonce), exp)
+	}
 }
 
 // updatePendingNonce updates the account nonce to the dropped transaction.

@@ -289,6 +289,9 @@ func New(ctx *node.ServiceContext, config *Config) (*CN, error) {
 	}
 	// TODO-Klaytn-ServiceChain: add account creation prevention in the txPool if TxTypeAccountCreation is supported.
 	config.TxPool.NoAccountCreation = config.NoAccountCreation
+	if config.TrieNodeCacheConfig.RedisClusterEnable && config.TrieNodeCacheConfig.RedisEndpoints != nil {
+		config.TxPool.RedisEndpoints = config.TrieNodeCacheConfig.RedisEndpoints
+	}
 	cn.txPool = blockchain.NewTxPool(config.TxPool, cn.chainConfig, bc)
 	governance.SetTxPool(cn.txPool)
 	// Synchronize unitprice
