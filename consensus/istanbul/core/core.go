@@ -22,6 +22,12 @@ package core
 
 import (
 	"bytes"
+	"math"
+	"math/big"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/klaytn/klaytn/blockchain/types"
 	"github.com/klaytn/klaytn/common"
 	"github.com/klaytn/klaytn/consensus/istanbul"
@@ -29,11 +35,6 @@ import (
 	"github.com/klaytn/klaytn/log"
 	"github.com/rcrowley/go-metrics"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
-	"math"
-	"math/big"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 var logger = log.NewModuleLogger(log.ConsensusIstanbulCore)
@@ -359,7 +360,7 @@ func (c *core) newRoundChangeTimer() {
 		timeout += time.Duration(math.Pow(2, float64(round))) * time.Second
 	}
 
-	// timeout is alwasy 5 seconds for the test
+	// timeout is always 5 seconds for the test
 	timeout = 5 * time.Second
 
 	c.roundChangeTimer.Store(time.AfterFunc(timeout, func() {

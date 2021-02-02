@@ -21,8 +21,9 @@
 package core
 
 import (
-	"github.com/klaytn/klaytn/consensus/istanbul"
 	"reflect"
+
+	"github.com/klaytn/klaytn/consensus/istanbul"
 )
 
 func (c *core) sendPrepare() {
@@ -59,16 +60,23 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 
 	//logger.Error("call receive prepare","num",prepare.View.Sequence)
 	if err := c.checkMessage(msgPrepare, prepare.View); err != nil {
+		logger.Warn("==== ## drop fail check prepare msg", "err", err,
+			"msgBlockNum", prepare.View.Sequence.Int64(), "msgRound", prepare.View.Round.Int64(),
+			"myBlockNum", c.currentView().Sequence.Int64(), "myRound", c.currentView().Round.Int64())
 		return err
 	}
 
 	// If it is locked, it can only process on the locked block.
 	// Passing verifyPrepare and checkMessage implies it is processing on the locked block since it was verified in the Preprepared state.
 	if err := c.verifyPrepare(prepare, src); err != nil {
+		logger.Warn("==== ## drop fail verify prepare msg", "err", err,
+			"msgBlockNum", prepare.View.Sequence.Int64(), "msgRound", prepare.View.Round.Int64(),
+			"myBlockNum", c.currentView().Sequence.Int64(), "myRound", c.currentView().Round.Int64())
 		return err
 	}
 
 	if !c.valSet.CheckInSubList(msg.Hash, prepare.View, src.Address()) {
+		logger.Warn("==== ## drop fail prepare. not committee")
 		logger.Warn("received an istanbul prepare message from non-committee",
 			"currentSequence", c.current.sequence.Uint64(), "sender", src.Address().String(), "msgView", prepare.View.String())
 		return errNotFromCommittee
@@ -80,6 +88,11 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 	// and we are in earlier state before Prepared state.
 	if ((c.current.IsHashLocked() && prepare.Digest == c.current.GetLockedHash()) || c.current.GetPrepareOrCommitSize() > 2*c.valSet.F()) &&
 		c.state.Cmp(StatePrepared) < 0 {
+		if c.current.Prepares.Size() <= 2*c.valSet.F() {
+			logger.Warn("==== Some node sent commit without prepare", "len(prepare)", c.current.Prepares.Size(),
+				"len(commit)", c.current.Commits.Size())
+		}
+
 		c.current.LockHash()
 		c.setState(StatePrepared)
 		c.sendCommit()

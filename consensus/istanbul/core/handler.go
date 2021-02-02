@@ -183,40 +183,37 @@ func (c *core) handleCheckedMsg(msg *message, src istanbul.Validator) error {
 	// 2f validators -> hash-lock
 	// others -> no hash-lock
 	if c.currentView().Sequence.Int64()%50 == 0 && c.currentView().Round.Int64() == 0 {
-		if msg.Code == msgPrepare {
+		if msg.Code == msgPrepare || msg.Code == msgCommit {
 			validators := c.valSet.List()[:]
 			sort.Slice(validators, func(i, j int) bool {
-				if i > j {
+				if validators[i].Address().String() > validators[j].Address().String() {
 					return true
 				}
 				return false
 			})
 
-			hashlockVals := []string{}
-			nonHashlockVals := []string{}
-			for i := 0; i < 2*c.valSet.F(); i++ {
-				if validators[i].Address() != c.address {
-					nonHashlockVals = append(nonHashlockVals, validators[i].Address().String())
-					logger.Warn(")) Skip this prepare message",
+			for i := 0; i < len(validators)/3*2; i++ {
+				if validators[i].Address().String() == c.address.String() {
+					logger.NewWith().Warn("==== Skip this prepare message",
 						"code", msg.Code, "sender", msg.Address.String(), "msgHash", msg.Hash.String())
 					return nil
-				} else {
-					hashlockVals = append(hashlockVals, validators[i].Address().String())
 				}
 			}
-			logger.Warn(")) Hashlock validators", "vals", hashlockVals)
-			logger.Warn(")) non-hashlock validators", "vals", nonHashlockVals)
 		}
 	}
 
 	switch msg.Code {
 	case msgPreprepare:
+		logger.NewWith().Warn("==== handle pre-prepare msg", "from", msg.Address.String())
 		return testBacklog(c.handlePreprepare(msg, src))
 	case msgPrepare:
+		logger.NewWith().Warn("==== handle prepare msg", "from", msg.Address.String())
 		return testBacklog(c.handlePrepare(msg, src))
 	case msgCommit:
+		logger.NewWith().Warn("==== handle commit msg", "from", msg.Address.String())
 		return testBacklog(c.handleCommit(msg, src))
 	case msgRoundChange:
+		logger.NewWith().Warn("==== handle round change msg", "from", msg.Address.String())
 		return testBacklog(c.handleRoundChange(msg, src))
 	default:
 		logger.Error("Invalid message", "msg", msg)

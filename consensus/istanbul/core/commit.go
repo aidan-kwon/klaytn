@@ -71,31 +71,33 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 	})
 }
 
-var msgChecker = make(map[int64]int)
-
 func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 	// Decode COMMIT message
 	var commit *istanbul.Subject
 	err := msg.Decode(&commit)
 	if err != nil {
+		logger.Crit("fail to decode commit message")
 		return errFailedDecodeCommit
 	}
 
-	msgChecker[c.currentView().Sequence.Int64()] += 1
-	logger.Warn(")) New commit msg",
-		"blockNumber", c.currentView().Sequence.Int64(), "count", msgChecker[c.currentView().Sequence.Int64()])
-
 	//logger.Error("receive handle commit","num", commit.View.Sequence)
 	if err := c.checkMessage(msgCommit, commit.View); err != nil {
+		logger.Warn("==== ## drop fail check commit msg", "err", err,
+			"msgBlockNum", commit.View.Sequence.Int64(), "msgRound", commit.View.Round.Int64(),
+			"myBlockNum", c.currentView().Sequence.Int64(), "myRound", c.currentView().Round.Int64())
 		//logger.Error("### istanbul/commit.go checkMessage","num",commit.View.Sequence,"err",err)
 		return err
 	}
 
 	if err := c.verifyCommit(commit, src); err != nil {
+		logger.Warn("==== ## drop fail verify commit msg", "err", err,
+			"msgBlockNum", commit.View.Sequence.Int64(), "msgRound", commit.View.Round.Int64(),
+			"myBlockNum", c.currentView().Sequence.Int64(), "myRound", c.currentView().Round.Int64())
 		return err
 	}
 
 	if !c.valSet.CheckInSubList(msg.Hash, commit.View, src.Address()) {
+		logger.Warn("==== ## drop fail commit. not committee")
 		logger.Warn("received an istanbul commit message from non-committee",
 			"currentSequence", c.current.sequence.Uint64(), "sender", src.Address().String(), "msgView", commit.View.String())
 		return errNotFromCommittee
@@ -112,10 +114,6 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 		// Still need to call LockHash here since state can skip Prepared state and jump directly to the Committed state.
 		c.current.LockHash()
 		c.commit()
-	}
-
-	if msgChecker[c.currentView().Sequence.Int64()] != c.current.Commits.Size() {
-		logger.Warn(")) There was a dropped commit msg", "commit", c.current.Commits.messages)
 	}
 
 	return nil
