@@ -21,6 +21,8 @@
 package core
 
 import (
+	"sort"
+
 	"github.com/klaytn/klaytn/common"
 	"github.com/klaytn/klaytn/consensus/istanbul"
 )
@@ -175,6 +177,29 @@ func (c *core) handleCheckedMsg(msg *message, src istanbul.Validator) error {
 		}
 
 		return err
+	}
+
+	// Intentionally drop msg for the test at round 0 of every 50 block
+	// 2f validators -> hash-lock
+	// others -> no hash-lock
+	if c.currentView().Sequence.Int64()%50 == 0 && c.currentView().Round.Int64() == 0 {
+		if msg.Code == msgPrepare {
+			validators := c.valSet.List()[:]
+			sort.Slice(validators, func(i, j int) bool {
+				if i > j {
+					return true
+				}
+				return false
+			})
+
+			for i := 0; i < 2*c.valSet.F(); i++ {
+				if validators[i].Address() != c.address {
+					logger.Warn("Sklip this prepare message",
+						"code", msg.Code, "sender", msg.Address.String(), "msgHash", msg.Hash.String())
+					return nil
+				}
+			}
+		}
 	}
 
 	switch msg.Code {
