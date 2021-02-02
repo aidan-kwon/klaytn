@@ -359,6 +359,9 @@ func (c *core) newRoundChangeTimer() {
 		timeout += time.Duration(math.Pow(2, float64(round))) * time.Second
 	}
 
+	// timeout is alwasy 5 seconds for the test
+	timeout = 5 * time.Second
+
 	c.roundChangeTimer.Store(time.AfterFunc(timeout, func() {
 		var loc, proposer string
 
