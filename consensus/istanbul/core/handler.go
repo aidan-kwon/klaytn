@@ -192,13 +192,20 @@ func (c *core) handleCheckedMsg(msg *message, src istanbul.Validator) error {
 				return false
 			})
 
+			hashlockVals := []string{}
+			nonHashlockVals := []string{}
 			for i := 0; i < 2*c.valSet.F(); i++ {
 				if validators[i].Address() != c.address {
-					logger.Warn("Sklip this prepare message",
+					nonHashlockVals = append(nonHashlockVals, validators[i].Address().String())
+					logger.Warn(")) Skip this prepare message",
 						"code", msg.Code, "sender", msg.Address.String(), "msgHash", msg.Hash.String())
 					return nil
+				} else {
+					hashlockVals = append(hashlockVals, validators[i].Address().String())
 				}
 			}
+			logger.Warn(")) Hashlock validators", "vals", hashlockVals)
+			logger.Warn(")) non-hashlock validators", "vals", nonHashlockVals)
 		}
 	}
 

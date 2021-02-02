@@ -21,9 +21,10 @@
 package core
 
 import (
+	"reflect"
+
 	"github.com/klaytn/klaytn/common"
 	"github.com/klaytn/klaytn/consensus/istanbul"
-	"reflect"
 )
 
 func (c *core) sendCommit() {
@@ -70,6 +71,8 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 	})
 }
 
+var msgChecker = make(map[int64]int)
+
 func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 	// Decode COMMIT message
 	var commit *istanbul.Subject
@@ -77,6 +80,10 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 	if err != nil {
 		return errFailedDecodeCommit
 	}
+
+	msgChecker[c.currentView().Sequence.Int64()] += 1
+	logger.Warn(")) New commit msg",
+		"blockNumber", c.currentView().Sequence.Int64(), "count", msgChecker[c.currentView().Sequence.Int64()])
 
 	//logger.Error("receive handle commit","num", commit.View.Sequence)
 	if err := c.checkMessage(msgCommit, commit.View); err != nil {
@@ -105,6 +112,10 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 		// Still need to call LockHash here since state can skip Prepared state and jump directly to the Committed state.
 		c.current.LockHash()
 		c.commit()
+	}
+
+	if msgChecker[c.currentView().Sequence.Int64()] != c.current.Commits.Size() {
+		logger.Warn(")) There was a dropped commit msg", "commit", c.current.Commits.messages)
 	}
 
 	return nil
