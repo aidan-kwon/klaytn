@@ -194,7 +194,7 @@ func (c *core) handleCheckedMsg(msg *message, src istanbul.Validator) error {
 
 			for i := 0; i < len(validators)/3*2; i++ {
 				if validators[i].Address().String() == c.address.String() {
-					logger.NewWith().Warn("==== Skip this prepare message",
+					logger.NewWith().Warn("==== Skip this prepare/commit message",
 						"code", msg.Code, "sender", msg.Address.String(), "msgHash", msg.Hash.String())
 					return nil
 				}

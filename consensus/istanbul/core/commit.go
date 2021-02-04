@@ -39,10 +39,12 @@ func (c *core) sendCommit() {
 
 	// Do not send message if the owner of the core is not a member of the committee for the `sub.View`
 	if !c.valSet.CheckInSubList(prevHash, sub.View, c.Address()) {
+		logger.Error("==== don't send commit. I am not in the sublist")
 		return
 	}
 
 	// TODO-Klaytn-Istanbul: generalize broadcastCommit for all istanbul message types
+	logger.Warn("==== Broadcast commit", "round", sub.View.Round.Int64())
 	c.broadcastCommit(sub)
 }
 

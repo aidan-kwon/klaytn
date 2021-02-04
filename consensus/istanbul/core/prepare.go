@@ -34,6 +34,7 @@ func (c *core) sendPrepare() {
 
 	// Do not send message if the owner of the core is not a member of the committee for the `sub.View`
 	if !c.valSet.CheckInSubList(prevHash, sub.View, c.Address()) {
+		logger.Error("==== don't send prepare. I am not in the sublist")
 		return
 	}
 
@@ -43,6 +44,7 @@ func (c *core) sendPrepare() {
 		return
 	}
 
+	logger.Warn("==== Broadcast prepare", "round", sub.View.Round.Int64())
 	c.broadcast(&message{
 		Hash: prevHash,
 		Code: msgPrepare,
@@ -86,7 +88,8 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 
 	// Change to Prepared state if we've received enough PREPARE messages or it is locked
 	// and we are in earlier state before Prepared state.
-	if ((c.current.IsHashLocked() && prepare.Digest == c.current.GetLockedHash()) || c.current.GetPrepareOrCommitSize() > 2*c.valSet.F()) &&
+	if ((c.current.IsHashLocked() && prepare.Digest == c.current.GetLockedHash()) ||
+		c.current.GetPrepareOrCommitSize() > 2*c.valSet.F()) &&
 		c.state.Cmp(StatePrepared) < 0 {
 		if c.current.Prepares.Size() <= 2*c.valSet.F() {
 			logger.Warn("==== Some node sent commit without prepare", "len(prepare)", c.current.Prepares.Size(),

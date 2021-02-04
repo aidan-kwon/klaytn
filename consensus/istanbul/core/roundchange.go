@@ -21,10 +21,11 @@
 package core
 
 import (
-	"github.com/klaytn/klaytn/common"
-	"github.com/klaytn/klaytn/consensus/istanbul"
 	"math/big"
 	"sync"
+
+	"github.com/klaytn/klaytn/common"
+	"github.com/klaytn/klaytn/consensus/istanbul"
 )
 
 // sendNextRoundChange sends the ROUND CHANGE message with current round + 1
@@ -122,7 +123,8 @@ func (c *core) handleRoundChange(msg *message, src istanbul.Validator) error {
 
 	if num == numStartNewRound && (c.waitingForRoundChange || cv.Round.Cmp(roundView.Round) < 0) {
 		// We've received enough ROUND CHANGE messages, start a new round immediately.
-		logger.Warn("[RC] Received 2f+1 Round Change Messages. Starting new round")
+		logger.Warn("[RC] Received 2f+1 Round Change Messages. Starting new round",
+			"newRound", roundView.Round.Int64())
 		c.startNewRound(roundView.Round)
 		return nil
 	} else if c.waitingForRoundChange && num == numCatchUp {
