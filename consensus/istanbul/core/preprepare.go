@@ -21,10 +21,11 @@
 package core
 
 import (
+	"time"
+
 	"github.com/klaytn/klaytn/blockchain/types"
 	"github.com/klaytn/klaytn/consensus"
 	"github.com/klaytn/klaytn/consensus/istanbul"
-	"time"
 )
 
 func (c *core) sendPreprepare(request *istanbul.Request) {
@@ -67,6 +68,8 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 	// If it is old message, see if we need to broadcast COMMIT
 	if err := c.checkMessage(msgPreprepare, preprepare.View); err != nil {
 		if err == errOldMessage {
+			logger.Warn("==== old prepreare message", "msgRound", preprepare.View.Round.Int64(),
+				"from", src.Address().String())
 			// Get validator set for the given proposal
 			valSet := c.backend.ParentValidators(preprepare.Proposal).Copy()
 			previousProposer := c.backend.GetProposer(preprepare.Proposal.Number().Uint64() - 1)
@@ -84,7 +87,8 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 
 	// Check if the message comes from current proposer
 	if !c.valSet.IsProposer(src.Address()) {
-		logger.Warn("Ignore preprepare messages from non-proposer")
+		logger.Warn("Ignore preprepare messages from non-proposer",
+			"proposer", c.valSet.GetProposer().String(), "msgProposer", src.Address().String())
 		return errNotFromProposer
 	}
 

@@ -44,7 +44,6 @@ func (c *core) sendCommit() {
 	}
 
 	// TODO-Klaytn-Istanbul: generalize broadcastCommit for all istanbul message types
-	logger.Warn("==== Broadcast commit", "round", sub.View.Round.Int64())
 	c.broadcastCommit(sub)
 }
 
@@ -65,7 +64,7 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
-
+	logger.Warn("==== Broadcast commit", "round", sub.View.Round.Int64())
 	c.broadcast(&message{
 		Hash: sub.PrevHash,
 		Code: msgCommit,

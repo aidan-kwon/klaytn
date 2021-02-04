@@ -460,7 +460,7 @@ func (valSet *weightedCouncil) CalcProposer(lastProposer common.Address, round u
 		}
 	}
 
-	logger.Debug("Update a proposer", "old", valSet.proposer, "new", newProposer, "last proposer", lastProposer.String(), "round", round, "blockNum of council", valSet.blockNum, "blockNum of proposers", valSet.proposersBlockNum)
+	logger.Warn("==== Update a proposer", "old", valSet.proposer, "new", newProposer, "last proposer", lastProposer.String(), "round", round, "blockNum of council", valSet.blockNum, "blockNum of proposers", valSet.proposersBlockNum)
 	valSet.proposer.Store(newProposer)
 }
 
