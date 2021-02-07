@@ -117,6 +117,12 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 		c.commit()
 	}
 
+	if c.current.GetPrepareOrCommitSize() > 2*c.valSet.F() && c.state.Cmp(StatePrepared) < 0 {
+		c.current.LockHash()
+		c.setState(StatePrepared)
+		c.sendCommit()
+	}
+
 	return nil
 }
 
