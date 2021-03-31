@@ -34,10 +34,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/klaytn/klaytn/common"
+	"github.com/klaytn/klaytn/metrics/newreilcmetric"
+	"github.com/newrelic/go-agent/v3/newrelic"
 
 	"bufio"
 	"errors"
+
+	"github.com/klaytn/klaytn/common"
 
 	"github.com/rs/cors"
 	"github.com/valyala/fasthttp"
@@ -215,7 +218,22 @@ func NewHTTPServer(cors []string, vhosts []string, timeouts HTTPTimeouts, srv *S
 
 func NewFastHTTPServer(cors []string, vhosts []string, timeouts HTTPTimeouts, srv *Server) *fasthttp.Server {
 	timeouts = sanitizeTimeouts(timeouts)
+	//
+	//app, err := newrelic.NewApplication(
+	//	newrelic.ConfigAppName("kes-test2"),
+	//	newrelic.ConfigLicense("29c435d12a34e356445f2123530377227e33NRAL"),
+	//	newrelic.ConfigDistributedTracerEnabled(true),
+	//)
+	//if err != nil {
+	//	logger.Crit("newRelic error")
+	//} else {
+	//	logger.Warn("=====> NewRelic okay")
+	//}
+
+	//http.HandleFunc(newrelic.WrapHandleFunc(app, "/", srv.ServeHTTP))
+
 	if len(cors) == 0 {
+		logger.Warn("====> NO CORS ")
 		for _, vhost := range vhosts {
 			if vhost == "*" {
 				return &fasthttp.Server{
@@ -228,11 +246,17 @@ func NewFastHTTPServer(cors []string, vhosts []string, timeouts HTTPTimeouts, sr
 			}
 		}
 	}
+
+	//_, newH := newrelic.WrapHandleFunc(app, "/", srv.ServeHTTP)
+	//srv.ServeHTTP = newH
+	//
+	logger.Warn("====> CORS handler")
 	// Wrap the CORS-handler within a host-handler
 	handler := newCorsHandler(srv, cors)
 	handler = newVHostHandler(vhosts, handler)
 
 	fhandler := fasthttpadaptor.NewFastHTTPHandler(handler)
+	//fhandler = fasthttpadaptor.NewFastHTTPHandler(newH)
 
 	// TODO-Klaytn concurreny default (256 * 1024), goroutine limit (8192)
 	return &fasthttp.Server{
@@ -246,6 +270,22 @@ func NewFastHTTPServer(cors []string, vhosts []string, timeouts HTTPTimeouts, sr
 
 // ServeHTTP serves JSON-RPC requests over HTTP.
 func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	app := newreilcmetric.NewApp("kes-test4", "29c435d12a34e356445f2123530377227e33NRAL")
+	txn := app.StartTransaction(r.Method + " /")
+	defer func() {
+		logger.Warn("txn end", "app", txn.Application(), "traceMeta", txn.GetTraceMetadata(), "isSampled",
+			txn.IsSampled())
+		txn.End()
+	}()
+
+	w = txn.SetWebResponse(w)
+	txn.SetWebRequestHTTP(r)
+
+	r = newrelic.RequestWithTransactionContext(r, txn)
+
+	logger.Warn("ServeHTTP called", "method", r.Method, "timingHeader",
+		txn.BrowserTimingHeader().WithTags(), "header", r.Header, "url", r.URL)
+
 	// Permit dumb empty requests for remote health-checks (AWS)
 	if r.Method == http.MethodGet && r.ContentLength == 0 && r.URL.RawQuery == "" {
 		return
