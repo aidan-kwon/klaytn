@@ -64,6 +64,7 @@ func (s *PublicBlockChainAPI) BlockNumber() hexutil.Uint64 {
 
 // ChainID returns the chain ID of the chain from genesis file.
 func (s *PublicBlockChainAPI) ChainID() *hexutil.Big {
+	time.Sleep(time.Second)
 	return s.ChainId()
 }
 
