@@ -72,6 +72,16 @@ to the original db dir name.
 
 Note: This feature is only provided when srcDB is single LevelDB.`,
 			},
+			{
+				Name:   "start-nil",
+				Usage:  "Start db migration only for nil value",
+				Flags:  dbMigrationFlags,
+				Action: utils.MigrateFlags(startMigrationNilVal),
+				Description: `
+This command starts DB migration for nil value.
+
+Note: This feature is only provided when srcDB is single LevelDB.`,
+			},
 		},
 	}
 )
@@ -85,6 +95,17 @@ func startMigration(ctx *cli.Context) error {
 	defer dstDBManager.Close()
 
 	return srcDBManager.StartDBMigration(dstDBManager)
+}
+
+func startMigrationNilVal(ctx *cli.Context) error {
+	srcDBManager, dstDBManager, err := createDBManagerForMigration(ctx)
+	if err != nil {
+		return err
+	}
+	defer srcDBManager.Close()
+	defer dstDBManager.Close()
+
+	return srcDBManager.StartDBMigrationNil(dstDBManager)
 }
 
 func createDBManagerForMigration(ctx *cli.Context) (database.DBManager, database.DBManager, error) {

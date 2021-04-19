@@ -225,6 +225,7 @@ type DBManager interface {
 
 	// DB migration related function
 	StartDBMigration(DBManager) error
+	StartDBMigrationNil(DBManager) error
 
 	// ChainDataFetcher checkpoint function
 	WriteChainDataFetcherCheckpoint(checkpoint uint64) error

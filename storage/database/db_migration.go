@@ -23,6 +23,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/klaytn/klaytn/common/hexutil"
+
 	"github.com/pkg/errors"
 )
 
@@ -78,6 +80,97 @@ loop:
 		// make a report
 		if fetched%reportCycle == 0 {
 			logger.Info("DB migrated",
+				"fetched", fetched-previousFetched, "elapsedIter", time.Since(cycleStart),
+				"fetchedTotal", fetched, "elapsedTotal", time.Since(start))
+			cycleStart = time.Now()
+			previousFetched = fetched
+		}
+
+		// check for quit signal from OS
+		select {
+		case <-sigQuit:
+			logger.Info("exit called", "fetchedTotal", fetched, "elapsedTotal", time.Since(start))
+			break loop
+		default:
+		}
+	}
+
+	if err := dstBatch.Write(); err != nil {
+		return errors.Wrap(err, "failed to write items")
+	}
+
+	logger.Info("Finish DB migration", "fetchedTotal", fetched, "elapsedTotal", time.Since(start))
+
+	// If the current src DB is misc DB, clear all db dir on dst
+	// TODO: If DB Migration supports non-single db, change the checking logic
+	if path.Base(dbm.config.Dir) == dbBaseDirs[MiscDB] {
+		for i := uint8(MiscDB); i < uint8(databaseEntryTypeSize); i++ {
+			dstdbm.setDBDir(DBEntryType(i), "")
+		}
+	}
+
+	srcIter.Release()
+	if err := srcIter.Error(); err != nil { // any accumulated error from iterator
+		return errors.Wrap(err, "failed to iterate")
+	}
+
+	return nil
+}
+
+func (dbm *databaseManager) StartDBMigrationNil(dstdbm DBManager) error {
+	// settings for quit signal from os
+	sigQuit := make(chan os.Signal, 1)
+	signal.Notify(sigQuit,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+
+	// TODO enable for all dbs
+	srcDB := dbm.getDatabase(MiscDB) // first DB
+	dstDB := dstdbm.getDatabase(MiscDB)
+
+	// create src iterator and dst batch
+	srcIter := srcDB.NewIterator(nil, nil)
+	dstBatch := dstDB.NewBatch()
+
+	// vars for log
+	start := time.Now()
+	previousFetched, fetched := 0, 0
+	nilValCnt := 0
+
+loop:
+	for fetched = 0; srcIter.Next(); fetched++ {
+		cycleStart := time.Now()
+
+		// fetch keys and values
+		// Contents of srcIter.Key() and srcIter.Value() should not be modified, and
+		// only valid until the next call to Next.
+		key := make([]byte, len(srcIter.Key()))
+		val := make([]byte, len(srcIter.Value()))
+		copy(key, srcIter.Key())
+		copy(val, srcIter.Value())
+
+		////////////////////// New part for Nil value /////////////////////////////
+		if len(val) != 0 {
+			continue
+		}
+		nilValCnt++
+
+		if len(key) != 43 {
+			logger.Warn("Unexpected key length", "len(key)", len(key), "key", hexutil.Encode(key))
+		}
+		///////////////////////////////////////////////////////////////////////////
+
+		// write fetched keys and values to DB
+		// If dstDB is dynamoDB, Put will Write when the number items reach dynamoBatchSize.
+		if err := dstBatch.Put(key, val); err != nil {
+			return errors.Wrap(err, "failed to put batch")
+		}
+
+		// make a report
+		if fetched%reportCycle == 0 {
+			logger.Info("DB migrated", "nilValCnt", nilValCnt,
 				"fetched", fetched-previousFetched, "elapsedIter", time.Since(cycleStart),
 				"fetchedTotal", fetched, "elapsedTotal", time.Since(start))
 			cycleStart = time.Now()
