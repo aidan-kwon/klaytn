@@ -251,6 +251,21 @@ func NewClient(initctx context.Context, connectFunc func(context.Context) (net.C
 	return c, nil
 }
 
+func (c *Client) SetHttpHeader(key string, val string) {
+	con, ok := c.writeConn.(*httpConn)
+	if ok {
+		con.req.Header.Set(key, val)
+	}
+}
+
+func (c *Client) GetHttpHeader(key string) string {
+	con, ok := c.writeConn.(*httpConn)
+	if ok {
+		return con.req.Header.Get(key)
+	}
+	return ""
+}
+
 func (c *Client) nextID() json.RawMessage {
 	id := atomic.AddUint32(&c.idCounter, 1)
 	return []byte(strconv.FormatUint(uint64(id), 10))
