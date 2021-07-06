@@ -31,6 +31,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/klaytn/klaytn/consensus/istanbul"
+
 	"github.com/klaytn/klaytn/accounts"
 	"github.com/klaytn/klaytn/accounts/keystore"
 	"github.com/klaytn/klaytn/api/debug"
@@ -1003,6 +1005,11 @@ var (
 		Name:  "config",
 		Usage: "TOML configuration file",
 	}
+	IstanbulRCTimeoutFlag = cli.Uint64Flag{
+		Name:  "istanbul.rc.timeout",
+		Usage: "Round 0 timeout duration of Istanbul consensus (Experimental feature)",
+		Value: istanbul.DefaultConfig.Timeout,
+	}
 
 	// TODO-Klaytn-Bootnode: Add bootnode's metric options
 	// TODO-Klaytn-Bootnode: Implements bootnode's RPC
@@ -1589,6 +1596,8 @@ func SetKlayConfig(ctx *cli.Context, stack *node.Node, cfg *cn.Config) {
 	if ctx.GlobalIsSet(RPCGlobalGasCap.Name) {
 		cfg.RPCGasCap = new(big.Int).SetUint64(ctx.GlobalUint64(RPCGlobalGasCap.Name))
 	}
+
+	cfg.Istanbul.Timeout = ctx.GlobalUint64(IstanbulRCTimeoutFlag.Name)
 
 	// Override any default configs for hard coded network.
 	// TODO-Klaytn-Bootnode: Discuss and add `baobab` test network's genesis block

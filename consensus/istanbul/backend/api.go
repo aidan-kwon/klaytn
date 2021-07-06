@@ -498,5 +498,5 @@ func (api *APIExtension) GetBlockWithConsensusInfoByHash(blockHash common.Hash) 
 }
 
 func (api *API) GetTimeout() uint64 {
-	return istanbul.DefaultConfig.Timeout
+	return api.istanbul.config.Timeout
 }
