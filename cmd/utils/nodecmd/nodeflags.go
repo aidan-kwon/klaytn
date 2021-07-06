@@ -143,6 +143,7 @@ var KCNFlags = []cli.Flag{
 	utils.RewardbaseFlag,
 	utils.CypressFlag,
 	utils.BaobabFlag,
+	utils.IstanbulRCTimeoutFlag,
 }
 
 var KPNFlags = []cli.Flag{
@@ -233,6 +234,7 @@ var KSCNFlags = []cli.Flag{
 	utils.KASServiceChainSecretKeyFlag,
 	utils.KASServiceChainAccessKeyFlag,
 	utils.KASServiceChainXChainIdFlag,
+	utils.IstanbulRCTimeoutFlag,
 }
 
 var KSPNFlags = []cli.Flag{

@@ -363,7 +363,7 @@ func (c *core) newRoundChangeTimer() {
 
 	// TODO-Klaytn-Istanbul: Replace &istanbul.DefaultConfig.Timeout to c.config.Timeout
 	// set timeout based on the round number
-	timeout := time.Duration(atomic.LoadUint64(&istanbul.DefaultConfig.Timeout)) * time.Millisecond
+	timeout := time.Duration(atomic.LoadUint64(&c.config.Timeout)) * time.Millisecond
 	round := c.current.Round().Uint64()
 	if round > 0 {
 		timeout += time.Duration(math.Pow(2, float64(round))) * time.Second

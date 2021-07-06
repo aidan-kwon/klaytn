@@ -299,6 +299,7 @@ var FlagGroups = []FlagGroup{
 			RestartTimeOutFlag,
 			DaemonPathFlag,
 			KESNodeTypeServiceFlag,
+			IstanbulRCTimeoutFlag,
 		},
 	},
 }
